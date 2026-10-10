@@ -50,6 +50,7 @@ import {
 } from "@/lib/app-helpers";
 import { CODE_BLOCK_LANGUAGES, getCodeBlockLanguageValue } from "@/lib/code-block";
 import { EditorTableMenu } from "@/components/EditorTableMenu";
+import { EditorTextColorMenu } from "@/components/EditorTextColorMenu";
 import { wrapIndentedParagraphInList } from "@/lib/editor-shortcuts";
 import {
   MARKDOWN_THEME_PREFERENCES,
@@ -478,6 +479,8 @@ export const EditorToolbar = ({
           >
             <Bold className="h-4 w-4" />
           </EditorToolbarButton>
+          <EditorTextColorMenu editor={editor} disabled={disabled || codeBlockActive || isActive("code")} />
+          <EditorTextColorMenu editor={editor} disabled={disabled || codeBlockActive || isActive("code")} background />
           <EditorToolbarButton
             title={t("editorToolbar.italic")}
             active={isActive("italic")}
