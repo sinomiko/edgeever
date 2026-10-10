@@ -488,7 +488,7 @@ describe("Cloudflare deployment entrypoints", () => {
     expect(workflow).toContain("| Live deployment / 线上部署 |");
     expect(workflow).toContain("Not verified by this workflow / 本工作流未验证");
     expect(workflow).toContain("EDGE_EVER_CLOUDFLARE_DEPLOY_HOOK_URL");
-    expect(workflow).toContain("EDGE_EVER_PRESERVE_FORK_CHANGES");
+    expect(workflow).toContain("PRESERVE_FORK_CHANGES: 'true'");
     expect(workflow).toContain("PRESERVE_FORK_CHANGES");
     expect(workflow).not.toContain("upstream_merge_base");
     expect(workflow).not.toContain("local_app_changes");

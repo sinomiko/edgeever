@@ -39,7 +39,8 @@ jobs:
       # A manual run is an explicit request to publish the selected version.
       # Scheduled checks remain no-op when the Fork is already aligned.
       FORCE_REDEPLOY: ${{ github.event_name == 'workflow_dispatch' }}
-      PRESERVE_FORK_CHANGES: ${{ vars.EDGE_EVER_PRESERVE_FORK_CHANGES || 'false' }}
+      # This deployment maintains Markdown color compatibility; never mirror-reset it.
+      PRESERVE_FORK_CHANGES: 'true'
 
     steps:
       - name: Checkout deployed repository

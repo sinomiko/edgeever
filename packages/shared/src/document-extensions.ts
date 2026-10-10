@@ -13,6 +13,7 @@ import { PluginEmbed } from "./plugin-embed";
 import { EmptyExternalLink } from "./empty-external-link";
 import { EdgeEverLink } from "./editor-link";
 import { createEdgeEverTaskItem } from "./task-item-input";
+import { createTextColorExtensions } from "./text-color";
 
 export type CreateEdgeEverDocumentExtensionsOptions = {
   mathematics: AnyExtension[];
@@ -44,6 +45,7 @@ export const createEdgeEverDocumentExtensions = (
     : options.starterKit === undefined ? StarterKit : StarterKit.configure(options.starterKit),
   ...(options.markdown ? [EdgeEverLink] : []),
   EmptyExternalLink,
+  ...createTextColorExtensions(),
   TaskList,
   createEdgeEverTaskItem(),
   options.table === undefined ? TableKit : TableKit.configure(options.table),

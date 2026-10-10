@@ -157,6 +157,15 @@ const docContainsNodeType = (doc: TiptapDoc, nodeType: string): boolean => {
   return visit(doc.content);
 };
 
+const docContainsTextColor = (doc: TiptapDoc): boolean => {
+  const visit = (nodes: Array<TiptapNode | TiptapTextNode>): boolean => nodes.some((node) =>
+    (node.type === "text" && "marks" in node && node.marks?.some((mark) =>
+      mark.type === "textStyle" && (mark.attrs?.color || mark.attrs?.backgroundColor)
+    )) || ("content" in node && node.content ? visit(node.content) : false)
+  );
+  return visit(doc.content);
+};
+
 /**
  * Recovers Markdown features that an older editor schema could not persist in
  * contentJson. The stored Markdown remains the compatibility source in that
@@ -174,6 +183,7 @@ export const resolveMemoContentDoc = (
     : emptyDoc();
   if (
     !contentMarkdown?.trim() ||
+    docContainsTextColor(currentDoc) ||
     docContainsNodeType(currentDoc, "table") ||
     docContainsNodeType(currentDoc, "taskList") ||
     docContainsNodeType(currentDoc, "edgeeverThemeBlock") ||
@@ -197,6 +207,7 @@ export const resolveMemoContentDoc = (
   // JSON document. Also recover task lists and merge dividers when only Markdown
   // still retains their semantics.
   return docContainsNodeType(markdownDoc, "table")
+    || docContainsTextColor(markdownDoc)
     || docContainsNodeType(markdownDoc, "taskList")
     || docContainsNodeType(markdownDoc, MERGE_DIVIDER_NODE_TYPE)
     || docContainsNodeType(markdownDoc, BLOCK_MATH_NODE_TYPE)
@@ -363,9 +374,49 @@ export const docToMarkdown = (doc: unknown): string => {
   const serializableDoc = protectLiteralDollarPairs(projectNativeUnknownContentForMarkdown(
     stripEditorOnlyNodes(doc) as TiptapDoc
   ));
-  return markdownManager
-    .serialize(serializableDoc as Parameters<typeof markdownManager.serialize>[0])
+  const coloredWhitespace = protectColoredWhitespace(serializableDoc as TiptapDoc);
+  return coloredWhitespace.restore(markdownManager
+    .serialize(coloredWhitespace.doc))
     .replaceAll(LITERAL_DOLLAR_PLACEHOLDER, "\\$");
+};
+
+/** Markdown delimiters trim edge spaces; HTML color spans must retain them. */
+const protectColoredWhitespace = (doc: TiptapDoc) => {
+  if (!docContainsTextColor(doc)) return { doc, restore: (markdown: string) => markdown };
+  const json = JSON.stringify(doc);
+  let suffix = 0;
+  while (json.includes(`\uE000edgeeverColorSpace${suffix}`)) suffix += 1;
+  const prefix = `\uE000edgeeverColorSpace${suffix}`;
+  const replacements = new Map<string, string>();
+  let blankIndex = 0;
+  const visit = (node: TiptapNode | TiptapTextNode): TiptapNode | TiptapTextNode => {
+    if (node.type === "paragraph" && "content" in node && (!node.content?.length || node.content.every((child) =>
+      child.type === "text" && "text" in child && /^\s*$/.test(child.text) && !child.marks?.length
+    ))) {
+      const token = `${prefix}blank${blankIndex++}\uE001`;
+      const spaces = (node.content || []).map((child) => "text" in child ? child.text : "").join("");
+      replacements.set(token, `<span style="">${Array.from(spaces, (character) => `&#${character.codePointAt(0)};`).join("")}</span>`);
+      return { ...node, content: [{ type: "text", text: token }] };
+    }
+    if (node.type === "text" && "text" in node && node.marks?.some((mark) =>
+      mark.type === "textStyle" && (mark.attrs?.color || mark.attrs?.backgroundColor)
+    )) {
+      return { ...node, text: node.text.replace(/\s/g, (character) => {
+        const code = character.codePointAt(0)!;
+        const token = `${prefix}${code.toString(16)}\uE001`;
+        replacements.set(token, `&#${code};`);
+        return token;
+      }) };
+    }
+    return "content" in node && node.content ? { ...node, content: node.content.map(visit) } : node;
+  };
+  return {
+    doc: { ...doc, content: doc.content.map(visit) as TiptapNode[] },
+    restore: (markdown: string) => {
+      for (const [token, entity] of replacements) markdown = markdown.replaceAll(token, entity);
+      return markdown;
+    },
+  };
 };
 
 const LITERAL_DOLLAR_PLACEHOLDER = "\uE000edgeever-dollar\uE001";

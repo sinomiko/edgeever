@@ -30,10 +30,12 @@
     "@tiptap/extension-list": "3.31.0",
     "@tiptap/extension-mathematics": "3.31.0",
     "@tiptap/extension-table": "3.31.0",
+    "@tiptap/extension-text-style": "3.31.0",
     "@tiptap/markdown": "3.31.0",
     "@tiptap/pm": "3.31.0",
     "@tiptap/starter-kit": "3.31.0",
     "js-base64": "3.9.3",
+    "htmlparser2": "10.1.0",
     "katex": "0.16.22",
     "zod": "4.4.3"
   }
